@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+	<!-- This is a live editor for JXML Applications / Modules / Components -->
+	<head>
+		<script src="lib/system.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.0/ace.js"></script>
+		<style type="text/css" media="screen">
+			#file_browser {
+				position: absolute;
+				top: 0;
+				width: 20%;
+				bottom: 0;
+				left: 0;
+			}
+			#editor {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 20%;
+				width: 40%;
+			}
+			#preview {
+				position: absolute;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				width: 40%;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="file_browser"></div>
+		<div id="editor"></div>
+		<div id="preview"></div>
+		<script>
+			var editor = ace.edit("editor");
+
+			editor.setTheme("ace/theme/monokai");
+			//editor.setTheme("ace/theme/vibrant_ink");
+			editor.getSession().setMode("ace/mode/html");
+
+			var request = new XMLHttpRequest();
+
+			System.config({
+				baseURL: 'lib',
+				paths: {
+					'jx/data/*': 'datanode/jx/data/*.js' // TODO: search path style is more ideal
+
+				}
+		 });
+
+			var app, params = {
+				app: 'jx/example/KitchenSink',
+				renderer: 'jx/ui/html/HTMLRenderer'
+			};
+
+			location.search.replace(/\??(([^=]*)=)?([^&]+)&?/g, function(_, _, k, v) {
+				params[k || 'app'] = v;
+			});
+
+			request.open('GET', 'lib/' + params.app + '.jxml', false);
+			request.send(null);
+			editor.setValue(request.responseText);
+			editor.clearSelection();
+
+			var PREVIEW_NAME = 'render-live';
+
+			Promise.all([
+				System.import('jxml'),
+				System.import(params.renderer)
+			]).then(function(modules) {
+				var jxml = modules[0],
+					Renderer = modules[1].default,
+					dom = document.getElementById('preview');
+
+				render();
+
+				var timer;
+
+				editor.getSession().on('change', function(e) {
+					clearTimeout(timer);
+					timer = setTimeout(render, 200);
+				});
+
+				function render() {
+					var module_name = PREVIEW_NAME + '.jxml!jxml';
+
+					System.delete(module_name);
+
+					// TODO: hack to delete cached module declaration
+					delete System._loader.moduleRecords[module_name];
+
+					var contents = editor.getValue();
+
+					jxml.updateLive(PREVIEW_NAME + '.jxml', contents);
+
+					while (dom.lastChild)
+						dom.removeChild(dom.lastChild);
+
+					renderer = new Renderer(PREVIEW_NAME, dom);
+
+					app = renderer.app;
+					app.show();
+					setLayout();
+				}
+			});
+
+			function setLayout() {
+				app && app.setAttr({
+					x: 0,
+					y: 0,
+					width: innerWidth * 0.4,
+					height: innerHeight
+				});
+			}
+
+			// Hack to load JXML import style
+			var systemTranslate = System.translate; // store the old translate function
+
+			var IMPORT_REGEX = /^\s*import\s+(dynamic\s+)?([_a-zA-Z0-9.]+)\s*;?\s*$/mg,
+				DEFAULT_EXPORT = /^\s*export/m;//\s+default/;
+
+			System.translate = function translate(load) {
+				// override the translate function
+				var source = load.source, mangled;
+
+				if ( ! /!\w+$/.test(load.name) ) {
+					// only handle .js and not .jxml for now
+					//&& /^jx\/data\//.test(load.name)) {  // and only in jx/data/*
+					source = source.replace(IMPORT_REGEX, function(match, dynamic, package) {
+						mangled = true;
+
+						var name = package.split('.').pop();
+
+						return 'import ' + name + ' from "' + package.replace(/\./g, '/') + '";';
+					});
+
+					if ( ! DEFAULT_EXPORT.test(source)) {
+						var name = load.name.replace(/\.jxml.*/, '').split('/').pop();
+
+						source += '; export default ' + name;
+					}
+
+					load.source = source;
+				}
+
+				return systemTranslate.call(System, load);
+			};
+
+			Promise.all([
+				System.import('jxml'),
+				System.import(params.renderer),
+				System.import('datanode/jx/data/RemoteRoot')
+			]).then(function(modules) {
+				var jxml = modules[0],
+					Renderer = modules[1].default,
+					RemoteRoot = modules[2].default;
+
+				var $root = new RemoteRoot({ write: onwrite });
+
+				window.$root = $root;
+
+				var file_browser = document.getElementById('file_browser');
+
+				renderer = new Renderer('jx/editor/FileBrowser', file_browser);
+
+				var app = renderer.app;
+
+				app.show();
+
+				app && app.setAttr({
+					x: 0,
+					y: 0,
+					width: innerWidth / 5,
+					height: innerHeight
+				});
+
+				function onwrite(data) {
+					ws.send(JSON.stringify(data));
+				}
+
+				ws.addEventListener('message', function(m) {
+					try {
+						var json = JSON.parse(m.data);
+					}
+					catch(e) {
+						console.log('Bad JSON:', m);
+						return;
+					}
+
+					console.log('>>>', json);
+					$root.$root.update(json);
+				});
+			});
+
+			window.onresize = setLayout;
+
+			var ws = new WebSocket(location.protocol.replace('http', 'ws') + '//' + location.host + location.pathname + '/fs');
+		</script>
+	</body>
+</html>

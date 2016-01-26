@@ -1,0 +1,90 @@
+<Box xmlns="jx/ui" width="100" height="100" id="file_browser">
+	<Doc>
+		<![CDATA[
+		]]>
+	</Doc>
+	<script>
+		<![CDATA[
+			var self = this, pwd = [], bound, clear;
+
+			function bind() {
+				if (pwd.length)
+					breadcrumb.setAttr({ text: '▸ ' + pwd.join(' ▸ ') });
+				else
+					breadcrumb.setAttr({ text: '/' });
+
+				if (clear)
+					list.setAttr({ data: clear });
+
+				clear = {};
+
+				var $root = window.$root;
+
+				//if (bound) TODO unbind previous
+					//bound.unbind();
+
+				bound = $root.$.apply($root, pwd).$('*').$bind(self.locals);
+			}
+
+			function onupdate(path, data) {
+				if (!path) return; // TODO seems to be a bug
+
+				path = path.map(function(p) { return p.substr(1) });
+
+				console.log('in bind', path, data);
+
+				path = path.slice(0);
+
+				var part = path[path.length - 1];
+
+				var children = {};
+
+				if (data === true)
+					children[part] = {
+						text: '📁 ' + part,
+						onclick: [ self.jxmlcomponent.uid, 'onbrowse', [ path ] ]
+					};
+				else
+					children[part] = {
+						text: '📄 ' + part,
+						onclick: [ self.jxmlcomponent.uid, 'onopen', [ path, data ] ]
+					};
+
+				clear[part] = null;
+
+				list.setAttr({ data: children });
+			}
+
+			function onopen(path, data) {
+				// TODO no globals!
+				window.editor.setValue(data);
+				window.editor.clearSelection();
+			}
+
+			function onbrowse(path) {
+				var i = 0, cd = '';
+
+				while (path[i]) cd = path[i++];
+
+				pwd.push(cd);
+				bind();
+			}
+
+			function onback() {
+				if (pwd.length) {
+					pwd.pop();
+					bind();
+				}
+			}
+
+			back.setAttr({ onclick: [ this.jxmlcomponent.uid, 'onback', [] ] });
+
+			bind();
+		]]>
+	</script>
+	<Label id="breadcrumb" height="30" fontSize="12" textValign="center" background="rgb(209, 216, 224)"/>
+	<Button id="back" height="30" borderWidth="0">↩</Button>
+	<List direction="vertical" id="list" rowheight="25" cursor="pointer">
+		<Label fontSize="12"/>
+	</List>
+</Box>

@@ -6,6 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jxml/jxml-editor.git"
+  },
   "keywords": [
     "jxml",
     "components",
@@ -13,5 +17,11 @@
     "editor"
   ],
   "author": "Kwok Yang Bin <yangbin@zopim.com> (http://github.com/zopim/)",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "datanode": "git+ssh://git@github.com/zopim/datanode.git",
+    "express": "^4.13.4",
+    "jxml": "^2.0.0",
+    "ws": "^1.0.1"
+  }
 }
