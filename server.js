@@ -6,6 +6,7 @@ var express = require('express'),
 app.use('/', express.static(__dirname + '/public'));
 app.use('/lib', express.static(__dirname + '/node_modules/jxml/public/lib'));
 app.use('/lib', express.static(__dirname + '/node_modules/jxml/node_modules/systemjs/dist'));
+app.use('/lib', express.static(__dirname + '/node_modules/jxml/node_modules/systemjs/node_modules/dist'));
 app.use('/lib/jx', express.static(__dirname + '/jx'));
 
 var WebSocketServer = require('ws').Server,
