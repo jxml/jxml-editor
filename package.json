@@ -21,7 +21,7 @@
   "dependencies": {
     "datanode": "git+ssh://git@github.com/zopim/datanode.git",
     "express": "^4.13.4",
-    "jxml": "^2.0.0",
+    "jxml": "git+ssh://git@github.com/jxml/jxml.git",
     "ws": "^1.0.1"
   }
 }
