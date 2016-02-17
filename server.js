@@ -4,14 +4,20 @@ var express = require('express'),
 	server = http.createServer(app);
 
 app.use('/', express.static(__dirname + '/public'));
-app.use('/lib', express.static(__dirname + '/node_modules/jxml/public/lib'));
-app.use('/lib', express.static(__dirname + '/node_modules/systemjs/dist'));
-app.use('/lib', express.static(__dirname + '/node_modules/es6-module-loader/dist'));
-app.use('/lib', express.static(__dirname + '/node_modules/traceur/bin'));
+app.use('/lib', express.static(resolve('jxml/public/lib/jxml.js')));
+app.use('/lib', express.static(resolve('systemjs/dist/system.js')));
+app.use('/lib', express.static(resolve('es6-module-loader/dist/es6-module-loader.js')));
+app.use('/lib', express.static(resolve('traceur/bin/traceur.js')));
 app.use('/lib/jx', express.static(__dirname + '/jx'));
-app.use('/lib/jx', express.static(__dirname + '/node_modules/jxml/jx'));
-app.use('/lib/jx/data', express.static(__dirname + '/node_modules/datanode'));
-app.use('/lib/datanode', express.static(__dirname + '/node_modules/datanode'));
+app.use('/lib/jx', express.static(resolve('jxml/jx/JXML')));
+app.use('/lib/jx/data', express.static(resolve('datanode/jx/data/DataNode')));
+
+// Return directory where module would have been found
+function resolve(module) {
+	var path = require.resolve(module);
+
+	return path.replace(/\/[^/]*$/, '');
+}
 
 var WebSocketServer = require('ws').Server,
 	wss = new WebSocketServer({ server: server });

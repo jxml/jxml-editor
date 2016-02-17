@@ -44,7 +44,7 @@
 			System.config({
 				baseURL: 'lib',
 				paths: {
-					'jx/data/*': 'datanode/jx/data/*.js' // TODO: search path style is more ideal
+					'jx/data/*': 'jx/data/*.js' // TODO: search path style is more ideal
 
 				}
 		 });
@@ -150,7 +150,7 @@
 			Promise.all([
 				System.import('jxml'),
 				System.import(params.renderer),
-				System.import('datanode/jx/data/RemoteRoot')
+				System.import('jx/data/RemoteRoot')
 			]).then(function(modules) {
 				var jxml = modules[0],
 					Renderer = modules[1].default,
